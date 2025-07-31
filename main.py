@@ -47,10 +47,14 @@ async def is_admin(user_id: int, chat_id: int) -> bool:
         return False
 
 # --- Tambah grup ---
-@app.on_message(filters.command("addgrup") & filters.group)
+@app.on_message(filters.command("addgrup"))
 async def add_grup(_, msg: Message):
+    if msg.chat.type != "supergroup" and msg.chat.type != "group":
+        return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
+
     if msg.from_user.id != OWNER_ID:
         return
+
     group_id = msg.chat.id
     allowed = load_allowed_groups()
     if group_id in allowed:
@@ -60,10 +64,14 @@ async def add_grup(_, msg: Message):
     await msg.reply(f"✅ Grup `{group_id}` berhasil ditambahkan ke daftar yang diizinkan.", quote=True)
 
 # --- Hapus grup ---
-@app.on_message(filters.command("removegrup") & filters.group)
+@app.on_message(filters.command("removegrup"))
 async def remove_grup(_, msg: Message):
+    if msg.chat.type != "supergroup" and msg.chat.type != "group":
+        return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
+
     if msg.from_user.id != OWNER_ID:
         return
+
     group_id = msg.chat.id
     allowed = load_allowed_groups()
     if group_id not in allowed:
