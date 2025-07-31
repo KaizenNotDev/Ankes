@@ -44,139 +44,110 @@ async def is_admin(user_id: int, chat_id: int) -> bool:
     except:
         return False
 
-# --- Tambahkan grup ke daftar grup yang diizinkan ---
-@app.on_message(filters.command("addgrup"))
+# --- Tambah grup ---
+@app.on_message(filters.command("addgrup") & filters.group)
 async def add_grup(_, msg: Message):
     if msg.from_user.id != OWNER_ID:
         return
-
-    if not msg.chat or not hasattr(msg.chat, "type") or msg.chat.type not in ["group", "supergroup"]:
-        return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
-
     group_id = msg.chat.id
     allowed = load_allowed_groups()
     if group_id in allowed:
         return await msg.reply("✅ Grup ini sudah terdaftar.", quote=True)
-
     allowed.append(group_id)
     save_allowed_groups(allowed)
     await msg.reply(f"✅ Grup `{group_id}` berhasil ditambahkan ke daftar yang diizinkan.", quote=True)
 
-# --- Hapus grup dari daftar ---
-@app.on_message(filters.command("removegrup"))
+# --- Hapus grup ---
+@app.on_message(filters.command("removegrup") & filters.group)
 async def remove_grup(_, msg: Message):
     if msg.from_user.id != OWNER_ID:
         return
-
-    if not msg.chat or not hasattr(msg.chat, "type") or msg.chat.type not in ["group", "supergroup"]:
-        return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
-
     group_id = msg.chat.id
     allowed = load_allowed_groups()
     if group_id not in allowed:
         return await msg.reply("⚠️ Grup ini belum terdaftar.", quote=True)
-
     allowed.remove(group_id)
     save_allowed_groups(allowed)
     await msg.reply(f"❌ Grup `{group_id}` telah dihapus dari daftar yang diizinkan.", quote=True)
 
-# --- Lihat daftar grup yang diizinkan ---
+# --- List grup ---
 @app.on_message(filters.command("listgrup") & filters.user(OWNER_ID))
 async def list_grup(_, msg: Message):
     groups = load_allowed_groups()
     if not groups:
         return await msg.reply("📭 Tidak ada grup yang terdaftar.", quote=True)
-
     text = "\n".join(f"- `{gid}`" for gid in groups)
     await msg.reply(f"📌 Daftar grup yang diizinkan:\n{text}", quote=True)
 
-# --- Hapus pesan broadcast & blacklist ---
+# --- Filter pesan broadcast & blacklist ---
 @app.on_message(filters.group)
 async def filter_messages(_, msg: Message):
     if not is_group_allowed(msg.chat.id):
         return
-
     if msg.forward_from or msg.forward_from_chat:
-        try:
-            await msg.delete()
-            return
-        except:
-            pass
-
+        await msg.delete()
+        return
     if msg.text:
         text = msg.text.lower()
         for word in load_blacklist():
             if word in text:
-                try:
-                    await msg.delete()
-                    return
-                except:
-                    pass
+                await msg.delete()
+                return
 
 # --- Tambah blacklist ---
-@app.on_message(filters.command("addblacklist"))
+@app.on_message(filters.command("addblacklist") & filters.group)
 async def add_blacklist(_, msg: Message):
-    if not is_group_allowed(msg.chat.id):
-        return
-    if not await is_admin(msg.from_user.id, msg.chat.id):
+    if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
     if len(msg.command) < 2:
         return await msg.reply("Gunakan format: `/addblacklist kata1 kata2 ...`", quote=True)
-
     words = load_blacklist()
-    new_words = msg.command[1:]
-    words.extend(w.lower() for w in new_words if w.lower() not in words)
+    new_words = [w.lower() for w in msg.command[1:] if w.lower() not in words]
+    if not new_words:
+        return await msg.reply("⚠️ Tidak ada kata baru untuk ditambahkan.", quote=True)
+    words.extend(new_words)
     save_blacklist(words)
-    await msg.reply(f"✅ Ditambahkan ke blacklist:\n`{', '.join(new_words)}`", quote=True)
+    await msg.reply(f"✅ Ditambahkan ke blacklist: `{', '.join(new_words)}`", quote=True)
 
-# --- Hapus dari blacklist ---
-@app.on_message(filters.command("delblacklist"))
+# --- Hapus blacklist ---
+@app.on_message(filters.command("delblacklist") & filters.group)
 async def del_blacklist(_, msg: Message):
-    if not is_group_allowed(msg.chat.id):
-        return
-    if not await is_admin(msg.from_user.id, msg.chat.id):
+    if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
     if len(msg.command) < 2:
         return await msg.reply("Gunakan format: `/delblacklist kata1 kata2 ...`", quote=True)
-
     words = load_blacklist()
     to_remove = [w.lower() for w in msg.command[1:]]
     updated = [w for w in words if w not in to_remove]
     save_blacklist(updated)
-    await msg.reply(f"❌ Dihapus dari blacklist:\n`{', '.join(to_remove)}`", quote=True)
+    await msg.reply(f"❌ Dihapus dari blacklist: `{', '.join(to_remove)}`", quote=True)
 
-# --- Lihat blacklist dengan inline button ---
-@app.on_message(filters.command("listblacklist"))
+# --- List blacklist ---
+@app.on_message(filters.command("listblacklist") & filters.group)
 async def list_blacklist(_, msg: Message):
-    if not is_group_allowed(msg.chat.id):
+    if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
-    if not await is_admin(msg.from_user.id, msg.chat.id):
-        return
-
     words = load_blacklist()
     if not words:
         return await msg.reply("📭 Blacklist kosong.", quote=True)
-
-    buttons = []
-    row = []
-    for i, word in enumerate(words):
+    buttons, row = [], []
+    for word in words:
         row.append(InlineKeyboardButton(word, callback_data=f"bl_{word}"))
         if len(row) == 2:
             buttons.append(row)
             row = []
     if row:
         buttons.append(row)
-
     await msg.reply(
         "📌 Daftar blacklist (klik untuk info):",
         reply_markup=InlineKeyboardMarkup(buttons),
         quote=True
     )
 
-# --- Tanggapi tombol inline ---
-@app.on_callback_query(filters.regex("^bl_"))
+# --- Callback blacklist ---
+@app.on_callback_query(filters.regex(r"^bl_"))
 async def on_blacklist_button(_, callback: CallbackQuery):
-    word = callback.data.replace("bl_", "")
+    word = callback.data.split("bl_")[1]
     await callback.answer(f"🔘 Kata: {word}", show_alert=True)
 
 app.run()
