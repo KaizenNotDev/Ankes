@@ -4,8 +4,10 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from pyrogram.enums import ChatMemberStatus
 from config import API_ID, API_HASH, BOT_TOKEN, OWNER_ID
 
-BLACKLIST_FILE = "blacklist.txt"
-ALLOWED_GROUPS_FILE = "allowed_groups.txt"
+# Gunakan path absolut agar file selalu disimpan & dibaca dari lokasi script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BLACKLIST_FILE = os.path.join(BASE_DIR, "blacklist.txt")
+ALLOWED_GROUPS_FILE = os.path.join(BASE_DIR, "allowed_groups.txt")
 
 app = Client("filter_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -85,14 +87,20 @@ async def filter_messages(_, msg: Message):
     if not is_group_allowed(msg.chat.id):
         return
     if msg.forward_from or msg.forward_from_chat:
-        await msg.delete()
-        return
+        try:
+            await msg.delete()
+            return
+        except:
+            pass
     if msg.text:
         text = msg.text.lower()
         for word in load_blacklist():
             if word in text:
-                await msg.delete()
-                return
+                try:
+                    await msg.delete()
+                    return
+                except:
+                    pass
 
 # --- Tambah blacklist ---
 @app.on_message(filters.command("addblacklist") & filters.group)
