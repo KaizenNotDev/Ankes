@@ -1,4 +1,4 @@
-API_ID = 123456  # Ganti dengan API ID kamu
-API_HASH = "your_api_hash"  # Ganti dengan API HASH kamu
-BOT_TOKEN = "your_bot_token"  # Ganti dengan token bot kamu
-OWNER_ID = 123456789  # ID Telegram kamu (admin bot)
+API_ID = 12831328  # Ganti dengan API ID Anda
+API_HASH = "7c4bdc0ad4355f8a934701af9d463d20"  # Ganti dengan API HASH Anda
+BOT_TOKEN = "7862747709:AAH8BTx8ODX6cBb_9WrDcz-lc-hza9Y4DXU"  # Ganti dengan Bot Token Anda
+OWNER_ID = 1579989371  # Ganti dengan ID Telegram Anda (angka)
