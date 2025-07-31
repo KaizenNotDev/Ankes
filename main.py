@@ -49,7 +49,7 @@ async def is_admin(user_id: int, chat_id: int) -> bool:
 # --- Tambah grup ---
 @app.on_message(filters.command("addgrup"))
 async def add_grup(_, msg: Message):
-    if msg.chat.type != "supergroup" and msg.chat.type != "group":
+    if msg.chat.type not in ["supergroup", "group"]:
         return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
 
     if msg.from_user.id != OWNER_ID:
@@ -66,7 +66,7 @@ async def add_grup(_, msg: Message):
 # --- Hapus grup ---
 @app.on_message(filters.command("removegrup"))
 async def remove_grup(_, msg: Message):
-    if msg.chat.type != "supergroup" and msg.chat.type != "group":
+    if msg.chat.type not in ["supergroup", "group"]:
         return await msg.reply("❌ Perintah ini hanya dapat digunakan di dalam grup.", quote=True)
 
     if msg.from_user.id != OWNER_ID:
@@ -116,14 +116,14 @@ async def add_blacklist(_, msg: Message):
     if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
     if len(msg.command) < 2:
-        return await msg.reply("Gunakan format: `/addblacklist kata1 kata2 ...`", quote=True)
+        return await msg.reply("Gunakan format: /addblacklist kata1 kata2 ...", quote=True)
     words = load_blacklist()
     new_words = [w.lower() for w in msg.command[1:] if w.lower() not in words]
     if not new_words:
         return await msg.reply("⚠️ Tidak ada kata baru untuk ditambahkan.", quote=True)
     words.extend(new_words)
     save_blacklist(words)
-    await msg.reply(f"✅ Ditambahkan ke blacklist: `{', '.join(new_words)}`", quote=True)
+    await msg.reply(f"✅ Ditambahkan ke blacklist: {', '.join(new_words)}", quote=True)
 
 # --- Hapus blacklist ---
 @app.on_message(filters.command("delblacklist") & filters.group)
@@ -131,12 +131,12 @@ async def del_blacklist(_, msg: Message):
     if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
     if len(msg.command) < 2:
-        return await msg.reply("Gunakan format: `/delblacklist kata1 kata2 ...`", quote=True)
+        return await msg.reply("Gunakan format: /delblacklist kata1 kata2 ...", quote=True)
     words = load_blacklist()
     to_remove = [w.lower() for w in msg.command[1:]]
     updated = [w for w in words if w not in to_remove]
     save_blacklist(updated)
-    await msg.reply(f"❌ Dihapus dari blacklist: `{', '.join(to_remove)}`", quote=True)
+    await msg.reply(f"❌ Dihapus dari blacklist: {', '.join(to_remove)}", quote=True)
 
 # --- List blacklist ---
 @app.on_message(filters.command("listblacklist") & filters.group)
