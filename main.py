@@ -115,10 +115,11 @@ async def filter_messages(_, msg: Message):
 async def add_blacklist(_, msg: Message):
     if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
-    if len(msg.command) < 2:
+    args = msg.text.split()[1:]
+    if not args:
         return await msg.reply("Gunakan format: /addblacklist kata1 kata2 ...", quote=True)
     words = load_blacklist()
-    new_words = [w.lower() for w in msg.command[1:] if w.lower() not in words]
+    new_words = [w.lower() for w in args if w.lower() not in words]
     if not new_words:
         return await msg.reply("⚠️ Tidak ada kata baru untuk ditambahkan.", quote=True)
     words.extend(new_words)
@@ -130,10 +131,11 @@ async def add_blacklist(_, msg: Message):
 async def del_blacklist(_, msg: Message):
     if not is_group_allowed(msg.chat.id) or not await is_admin(msg.from_user.id, msg.chat.id):
         return
-    if len(msg.command) < 2:
+    args = msg.text.split()[1:]
+    if not args:
         return await msg.reply("Gunakan format: /delblacklist kata1 kata2 ...", quote=True)
     words = load_blacklist()
-    to_remove = [w.lower() for w in msg.command[1:]]
+    to_remove = [w.lower() for w in args]
     updated = [w for w in words if w not in to_remove]
     save_blacklist(updated)
     await msg.reply(f"❌ Dihapus dari blacklist: {', '.join(to_remove)}", quote=True)
